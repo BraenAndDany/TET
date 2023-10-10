@@ -15,6 +15,8 @@ namespace TET
         Shape currentShape;
         int size;
         int[,] map = new int[16, 8];
+        int linesRemoved;
+        int score;
         public Form1()
         {
             InitializeComponent();
@@ -28,41 +30,164 @@ namespace TET
         public void Init()
         {
             size = 25;
-
+            score = 0;
+            linesRemoved = 0;
             currentShape = new Shape(3, 0);
 
-            timer1.Interval = 100;
+            this.KeyUp += new KeyEventHandler(keyFunc);
+
+            timer1.Interval = 300;
             timer1.Tick += new EventHandler(update);
+            timer1.Start();
 
             Invalidate();
         }
+
+        private void keyFunc(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
+            {
+                case Keys.Space:
+                    break;
+                case Keys.Right:
+                    if (!CollideHor(1))
+                    {
+                        ResetArea();
+                        currentShape.Moveright();
+                        Merge();
+                        Invalidate();
+                    }
+                    break;
+                case Keys.Left:
+                    if (!CollideHor(-1))
+                    {
+                        ResetArea();
+                        currentShape.MoveLeft();
+                        Merge();
+                        Invalidate();
+                    }
+                    break;
+            }
+        }
+
         private void update(object sender, EventArgs e)
         {
             ResetArea();
-            currentShape.MoveDown();
+            if (!Collide())
+            {
+                currentShape.MoveDown();
+            }
+            else
+            {
+                Merge();
+                currentShape = new Shape(3, 0);
+            }
             Merge();
             Invalidate();
         }
+        public void SlideMap()
+        {
+            int count = 0;
+            int curRemovedLines = 0;
+            for (int i = 0; i < 16; i++)
+            {
+                count = 0;
+                for(int j = 0; j < 8; j++)
+                {
+                    if (map[i,j]!=0)
+                        count++;
+                }
+                if (count == 8)
+                {
+                    curRemovedLines++;
+                    for(int k = i;k >= 1; k--)
+                    {
+                        for(int o = 0; o < 8; o++)
+                        {
+                            map[k,o] = map[k-1,o];
+                        }
+                    }
+                }
+            }
+            for(int i = 0;i < curRemovedLines; i++)
+            {
+                score += 10 * curRemovedLines;
+            }
+            label1.Text = "Score: " + score;
+        }
         public void Merge()
         {
-            for (int i = currentShape.y; i < currentShape.y + 3; i++)
+            for (int i = currentShape.y; i < currentShape.y + currentShape.sizeMatrix; i++)
             {
-                for (int j = currentShape.x; j < currentShape.x + 3; j++)
+                for (int j = currentShape.x; j < currentShape.x + currentShape.sizeMatrix; j++)
                 {
+                    if (currentShape.matrix[i - currentShape.y, j - currentShape.x]!=0)
                     map[i, j] = currentShape.matrix[i - currentShape.y, j - currentShape.x];
                 }
             }
         }
+        public bool Collide()
+        {
+            for(int i = currentShape.y + currentShape.sizeMatrix - 1; i >= currentShape.y; i--)
+            {
+                for (int j = currentShape.x; j < currentShape.x+currentShape.sizeMatrix; j++)
+                {
+                    if (currentShape.matrix[i-currentShape.y,j-currentShape.x]!=0)
+                    {
+                        
+                        if(i+1==16)
+                            return true;
+                        if (map[i+1,j]!=0)
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+        public bool CollideHor(int dir)
+        {
+            for (int i = currentShape.y; i < currentShape.y + currentShape.sizeMatrix; i++)
+            {
+                for (int j = currentShape.x; j < currentShape.x + currentShape.sizeMatrix; j++)
+                {
+                    if (currentShape.matrix[i - currentShape.y, j - currentShape.x] != 0)
+                    {
+                        if (j + 1 * dir > 7 || j + 1 * dir < 0)
+                            return true;
+
+                        if (map[i, j + 1 * dir] != 0)
+                        {
+                            if (j - currentShape.x + 1 * dir >= currentShape.sizeMatrix || j - currentShape.x + 1 * dir < 0)
+                            {
+                                return true;
+                            }
+                            if (currentShape.matrix[i - currentShape.y, j - currentShape.x + 1 * dir] == 0)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
         public void ResetArea()
         {
-            for (int i = currentShape.y; i < 3; i++)
+            for (int i = currentShape.y; i < currentShape.y + currentShape.sizeMatrix; i++)
             {
-                for (int j = currentShape.x; j < currentShape.x + 3; j++)
+                for (int j = currentShape.x; j < currentShape.x + currentShape.sizeMatrix; j++)
                 {
-                    map[i, j] = 0;
+                    if (i >= 0 && j >= 0 && i < 16 && j < 8)
+                    {
+                        if (currentShape.matrix[i-currentShape.y,j-currentShape.x]!=0)
+                        {
+                            map[i, j] = 0;
+                        }
+                    }
                 }
             }
         }
+
         public void DrawMap(Graphics e)
         {
             for (int i = 0; i < 16; i++)
@@ -71,7 +196,7 @@ namespace TET
                 {
                     if (map[i, j] == 1)
                     {
-                        e.FillRectangle(Brushes.Red, new Rectangle(50 + j * size, 50 + i * size, size, size));
+                      e.FillRectangle(Brushes.Red, new Rectangle(50 + j * (size)+1, 50 + i * (size)+1, size-1, size-1));
                     }
                 }
             }
@@ -91,6 +216,7 @@ namespace TET
         private void OnPaint(object sender, PaintEventArgs e)
         {
             DrawGrid(e.Graphics);
+            DrawMap(e.Graphics);
         }
     }
 }

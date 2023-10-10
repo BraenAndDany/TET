@@ -11,17 +11,18 @@ namespace TET
         public int x;
         public int y;
         public int[,] matrix;
+        public int sizeMatrix;
 
         public Shape(int _x, int _y)
         {
             x = _x;
             y = _y;
             matrix = new int[3, 3] {
-                {0,1,0},
                 {0,1,1},
-                {0,0,1},
+                {0,1,1},
+                {0,0,0},
             };
-
+            sizeMatrix = 3;
 
         }
         public void MoveDown()
