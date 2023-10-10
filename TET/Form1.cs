@@ -17,9 +17,11 @@ namespace TET
         int[,] map = new int[16, 8];
         int linesRemoved;
         int score;
+        int Interval;
         public Form1()
         {
             InitializeComponent();
+            this.KeyUp += new KeyEventHandler(keyFunc);
             Init();
         }
 
@@ -33,10 +35,13 @@ namespace TET
             score = 0;
             linesRemoved = 0;
             currentShape = new Shape(3, 0);
+            Interval = 200;
+            label1.Text = "Score: " + score;
+            label2.Text = "Lines: " + linesRemoved;
 
-            this.KeyUp += new KeyEventHandler(keyFunc);
+            
 
-            timer1.Interval = 300;
+            timer1.Interval = Interval;
             timer1.Tick += new EventHandler(update);
             timer1.Start();
 
@@ -47,7 +52,17 @@ namespace TET
         {
             switch (e.KeyCode)
             {
+                case Keys.A:
+                    if (!IsIntersects())
+                    {
+                        ResetArea();
+                        currentShape.RotateShape();
+                        Merge();
+                        Invalidate();
+                    }
+            break;
                 case Keys.Space:
+                    timer1.Interval = 10;
                     break;
                 case Keys.Right:
                     if (!CollideHor(1))
@@ -69,23 +84,70 @@ namespace TET
                     break;
             }
         }
-
+        public void ShowNextShape(Graphics g)
+        {
+            for (int i = 0; i < currentShape.sizeNextMatrix; i++)
+            {
+                for (int j = 0; j < currentShape.sizeNextMatrix; j++)
+                {
+                    if (currentShape.nextMatrix[i, j] == 1)
+                    {
+                        g.FillRectangle(Brushes.Red, new Rectangle(300 + j * (size) + 1, 50 + i * (size) + 1, size - 1, size - 1));
+                    }
+                    if (currentShape.nextMatrix[i, j] == 2)
+                    {
+                        g.FillRectangle(Brushes.Yellow, new Rectangle(300 + j * (size) + 1, 50 + i * (size) + 1, size - 1, size - 1));
+                    }
+                    if (currentShape.nextMatrix[i, j] == 3)
+                    {
+                        g.FillRectangle(Brushes.Green, new Rectangle(300 + j * (size) + 1, 50 + i * (size) + 1, size - 1, size - 1));
+                    }
+                    if (currentShape.nextMatrix[i, j] == 4)
+                    {
+                        g.FillRectangle(Brushes.Blue, new Rectangle(300 + j * (size) + 1, 50 + i * (size) + 1, size - 1, size - 1));
+                    }
+                    if (currentShape.nextMatrix[i, j] == 5)
+                    {
+                        g.FillRectangle(Brushes.Purple, new Rectangle(300 + j * (size) + 1, 50 + i * (size) + 1, size - 1, size - 1));
+                    }
+                }
+            }
+        }
         private void update(object sender, EventArgs e)
         {
             ResetArea();
+            
             if (!Collide())
             {
                 currentShape.MoveDown();
             }
             else
             {
+                
                 Merge();
+                
+                timer1.Interval = Interval;
+                //если поменять на currentShape.ResetShape(3,0) выдаёт ошибку
                 currentShape = new Shape(3, 0);
+                if (Collide())
+                {
+                    for (int i = 0; i < 16; i++)
+                    {
+                        for (int j = 0; j < 8; j++)
+                        {
+                            map[i, j] = 0;
+                        }
+                    }
+                    timer1.Tick -= new EventHandler(update);
+                    timer1.Stop();
+                    Init();
+                }
             }
+            SliceMap();
             Merge();
             Invalidate();
         }
-        public void SlideMap()
+        public void SliceMap()
         {
             int count = 0;
             int curRemovedLines = 0;
@@ -111,9 +173,30 @@ namespace TET
             }
             for(int i = 0;i < curRemovedLines; i++)
             {
-                score += 10 * curRemovedLines;
+                score += 10 * (i+1);
             }
+            linesRemoved += curRemovedLines;
+
+            if (linesRemoved % 5 == 0)
+            {
+                if (Interval > 600)
+                    Interval -= 10;
+            }
+
             label1.Text = "Score: " + score;
+            label2.Text = "Lines: " + linesRemoved;
+        }
+        public bool IsIntersects()
+        {
+            for (int i = currentShape.y; i < currentShape.y + currentShape.sizeMatrix; i++)
+            {
+                for (int j = currentShape.x; j < currentShape.x + currentShape.sizeMatrix; j++)
+                {
+                    if (map[i, j] != 0 && currentShape.matrix[i - currentShape.y, j - currentShape.x] == 0)
+                        return true;
+                }
+            }
+            return false;
         }
         public void Merge()
         {
@@ -198,6 +281,22 @@ namespace TET
                     {
                       e.FillRectangle(Brushes.Red, new Rectangle(50 + j * (size)+1, 50 + i * (size)+1, size-1, size-1));
                     }
+                    if (map[i, j] == 2)
+                    {
+                        e.FillRectangle(Brushes.Yellow, new Rectangle(50 + j * (size) + 1, 50 + i * (size) + 1, size - 1, size - 1));
+                    }
+                    if (map[i, j] == 3)
+                    {
+                        e.FillRectangle(Brushes.Green, new Rectangle(50 + j * (size) + 1, 50 + i * (size) + 1, size - 1, size - 1));
+                    }
+                    if (map[i, j] == 4)
+                    {
+                        e.FillRectangle(Brushes.Blue, new Rectangle(50 + j * (size) + 1, 50 + i * (size) + 1, size - 1, size - 1));
+                    }
+                    if (map[i, j] == 5)
+                    {
+                        e.FillRectangle(Brushes.Purple, new Rectangle(50 + j * (size) + 1, 50 + i * (size) + 1, size - 1, size - 1));
+                    }
                 }
             }
         }
@@ -217,6 +316,7 @@ namespace TET
         {
             DrawGrid(e.Graphics);
             DrawMap(e.Graphics);
+            ShowNextShape(e.Graphics);
         }
     }
 }
