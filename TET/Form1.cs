@@ -16,15 +16,16 @@ namespace TET
         int size;
         int[,] map = new int[16, 8];
         int linesRemoved;
-        int score;
+        public int score;
         int Interval;
         public Form1()
         {
             InitializeComponent();
             this.KeyUp += new KeyEventHandler(keyFunc);
             Init();
+            form2 = new Form2();
         }
-
+        Form2 form2;
         private void Form1_Load(object sender, EventArgs e)
         {
 
@@ -138,14 +139,23 @@ namespace TET
                             map[i, j] = 0;
                         }
                     }
+                    //
                     timer1.Tick -= new EventHandler(update);
                     timer1.Stop();
-                    Init();
+                    form2.Show();
+                    
+                    //
                 }
             }
             SliceMap();
             Merge();
             Invalidate();
+        }
+        public void ResetGame()
+        {
+            timer1.Tick -= new EventHandler(update);
+            timer1.Start();
+            Init();
         }
         public void SliceMap()
         {
